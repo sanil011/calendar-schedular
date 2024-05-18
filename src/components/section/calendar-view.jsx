@@ -236,7 +236,6 @@ function CalendarView({ firstDayCurrentMonth, currentMonth }) {
                         {/* <div className='absolute z-30 top-8 left-0 '> */}
                         {resources.map((resource, i) => {
                             return (
-                                <Droppable key={ind} droppableId={`${resource.id}`}>
                                 <div
                                     key={resource.id}
                                     id='row-cont'
@@ -253,7 +252,6 @@ function CalendarView({ firstDayCurrentMonth, currentMonth }) {
                                         )
                                     })}
                                 </div>
-                                </Droppable>
                             )
                         })}
                         {/* </div> */}
