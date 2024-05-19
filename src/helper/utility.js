@@ -27,7 +27,7 @@ export function cn(...inputs){
  * @param  isoDatestring, hour,min , newDate 
  * @returns isoformatted date ex->'2024-05-01T00:00:00+05:30'
  */
-function updateDateTime(isoDateString, hours, minutes, newDate) {
+export function updateDateTime(isoDateString, hours, minutes, newDate) {
     console.log(isoDateString, hours, minutes)
     let date = parseISO(isoDateString);
 
