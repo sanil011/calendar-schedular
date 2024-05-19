@@ -1,3 +1,11 @@
+import {
+    parseISO,
+    setMinutes,
+    setHours,
+    setDate,
+    formatISO
+} from 'date-fns'
+
 /**
  * @file helpers/utils.ts
  * @description Utility functions for handling CSS class names.
@@ -28,7 +36,7 @@ export function cn(...inputs){
  * @returns isoformatted date ex->'2024-05-01T00:00:00+05:30'
  */
 export function updateDateTime(isoDateString, hours, minutes, newDate) {
-    console.log(isoDateString, hours, minutes)
+
     let date = parseISO(isoDateString);
 
     // Set the updated time

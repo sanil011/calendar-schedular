@@ -260,14 +260,30 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
 
 
 
-    function dragStart(e) {
+   function dragStart(e) {
+        console.log(this)
         dragElement.current = this;
         parentElement.current = this.parentElement
         dragPoint.current = e.offsetX;
+        console.log(dragPoint)
     }
 
     function dragEnd() {
         console.log(this)
+    }
+
+    function dragOver(e) {
+        e.preventDefault();
+        // console.log(e.offsetX)
+    }
+
+    function dragEnter(e) {
+        e.preventDefault();
+        // console.log(this)
+        // console.log(e.clientX)
+    }
+
+    function dragLeave() {
     }
 
 
@@ -344,7 +360,7 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
             console.error("Failed to execute drag and drop:", error);
         }
     }
-   
+  
     const handleDrop = (e, eventsData) => {
         dragDrop(e, eventsData);
     };
@@ -354,14 +370,21 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
 
         const rowContainer = document.querySelectorAll('.row-cont');
         rowContainer.forEach(row => {
+            row.addEventListener('dragover', dragOver);
+            row.addEventListener('dragenter', dragEnter);
+            row.addEventListener('dragleave', dragLeave);
             row.addEventListener('drop', (e) => handleDrop(e, eventsData));
         });
         return () => {
             rowContainer.forEach(row => {
+                row.removeEventListener('dragover', dragOver);
+                row.removeEventListener('dragenter', dragEnter);
+                row.removeEventListener('dragleave', dragLeave);
                 row.removeEventListener('drop', (e) => handleDrop(e, eventsData)); // Modify this to correctly remove the specific handler
             });
         };
     }, [currentMonth, eventsData])
+
 
     
 
