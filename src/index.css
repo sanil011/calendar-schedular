@@ -9,7 +9,7 @@
     border-top: none;
 
 }
-.cells-cont > :nth-child(2) .cell{
+.cells-cont > :nth-child(2) {
 border-top: none;
 }
 
