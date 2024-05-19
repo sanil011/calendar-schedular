@@ -383,14 +383,14 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                 row.removeEventListener('drop', (e) => handleDrop(e, eventsData)); // Modify this to correctly remove the specific handler
             });
         };
-    }, [currentMonth, eventsData])
+    }, [currentMonth, eventsData,resources])
 
 
     
 
     // Add new resources
     const handleAddResource = () => {
-        newResource.id = resources.length;
+        newResource.id = resources.length +1;
         let updateResources = [...resources,newResource];
         setResources(updateResources);
         localStorage.setItem('guestaraResource', JSON.stringify(updateResources));
@@ -456,13 +456,13 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                                 data-date={formatISO(days[1]).substring(0, 10)}
                                 data-color={resource.color}
                                 data-resource={resource.id}
-                                className='row-cont | flex relative w-full h-16 border-t border-gray-400'>
+                                className='row-cont | flex relative w-full h-16  border-gray-400'>
                                 {/* cells */}
                                 {days.map((day, j) => {
                                     return (
                                         <div
                                             key={formatISO(day)}
-                                            className={cn('cell |relative h-16 w-20 border-r   border-gray-400 flex justify-center items-center')}>
+                                            className={cn('cell |relative h-16 w-20 border-r border-t border-gray-400 flex justify-center items-center')}>
                                         </div>
                                     )
                                 })}

@@ -9,14 +9,12 @@
     border-top: none;
 
 }
-.cells-cont > :nth-child(2) {
+
+
+.row-cont[data-resource="1"] .cell {
 border-top: none;
-}
 
-.row-cont:first-child{
-  border-top:none ;
 }
-
 *{
   box-sizing: border-box;
   margin: 0;
