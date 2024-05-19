@@ -28,6 +28,8 @@ export async function fetchInitialData() {
 }
 
 
+
+
 const App = () => {
   const [resources, setResources] = useState([]);
   const [eventsData, setEventsData] = useState([]);
@@ -40,8 +42,6 @@ const App = () => {
       try {
         if (typeof window !== 'undefined' && window.localStorage) {
           const [responseResources,responseEvents] = await fetchInitialData();
-          console.log(responseResources)
-          console.log(responseEvents)
           setEventsData(responseEvents);
           setResources(responseResources);
         }

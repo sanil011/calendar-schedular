@@ -1,31 +1,35 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
     eachDayOfInterval,
     endOfMonth,
     format,
     isToday,
-    formatISO, parseISO, setHours, setMinutes,
-    setDate
+    formatISO
 } from 'date-fns'
-import { cn } from '../../helper/utility';
+import { cn, updateDateTime } from '../../helper/utility';
 import { Plus } from 'lucide-react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@nextui-org/modal";
-import { Button } from '@nextui-org/react';
-import { Input } from "@nextui-org/input";
-
+import { useDisclosure } from "@nextui-org/modal";
+import AddEvent from '../modal/addEvent';
+import AddResource from '../modal/addResource';
 
 function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResources, eventsData, setEventsData }) {
    
     const dragPoint = useRef(null);
     const dragElement = useRef(null);
     const parentElement = useRef(null);
-    let resizing = false;
+    const [newEvent, setNewEvent] = useState({
+        start: '',
+        end: '',
+        title: '',
+        resource: 1,
+    })
     const [newResource, setNewResource] = useState({
         id: 1,
         name: '',
         color: '',
     });
-    const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const addEvent = useDisclosure();
 
 
     let days = eachDayOfInterval({
@@ -33,28 +37,51 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
         end: endOfMonth(firstDayCurrentMonth),
     })
 
-    const handleDeletEvent = (e,title) => {
-        let div = e.target.closest(`[data-event="${title}"]`)
-        let titleToRemove = div.getAttribute('data-event');
+
+/**
+ * function help to delete the event
+ * @param title of event
+ * @returns {void}
+ */
+    const handleDeletEvent = (e, title) => {
+        // find higher level div of event like if we click on time that is p tag then we select its parent
+        let div = e.target.closest(`[data-event="${title}"]`);
+
+        let resource = div.getAttribute('data-resource');
+        // find the row of resource
+        let row = document.querySelector(`[data-resource="${resource}"]`);
+
+
         let update = [...eventsData]
-        let rm = update.filter(event => event.title !== titleToRemove);
+        let rm = update.filter(event => event.title !== title);
         console.log(rm)
+        
         setEventsData((prev) => {
-            let updatedEvents = prev.filter(event => event.title !== titleToRemove);
+            let updatedEvents = prev.filter(event => event.title !== title);
+            localStorage.setItem('guestaraEvents', JSON.stringify(updatedEvents));
             return updatedEvents;
         });
 
-        alert(`${titleToRemove} is deleted`);
+        // remove event from a row
+        row.removeChild(div);
+        alert(`${title} is deleted`);
     }
 
 
 
+
+/**
+ * function help to  add event in the dom
+ * @param {nothing}
+ * @returns {void}
+ */
     const firstRender = () => {
+
         const rowContainer = document.querySelectorAll('.row-cont');
         for (let i = 0; i < rowContainer.length; i++) {
             eventsData.map((data, idx) => {
-                let row = rowContainer[i]
 
+                let row = rowContainer[i]
                 let rowDate = row.getAttribute("data-date");
                 let rowMonth = +format(rowDate, 'M ');
                 let rowYear = +format(rowDate, 'y ');
@@ -64,14 +91,17 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                 let day = +format(data.start, 'd ');
                 let lastDay = +format(data.end, 'd ');;
 
+                // Check row date and event date is equal or not
                 if (year == rowYear && rowMonth == month) {
-
                     let el = document.querySelector(`[data-event="${data.title}"]`);
+
                     if (row.getAttribute('data-resource') == data.resource && !el) {
                         let startTime = +format(data.start, 'H ');
                         let endTime = +format(data.end, 'H ');
                         let left = ((day - 1) * 80) + startTime * 3.33;
                         let width = (((lastDay * 24) - (day * 24) - startTime + endTime) * 3.33)
+
+                        // create a new event div to add in dom
                         const newDiv = document.createElement('div');
                         newDiv.setAttribute('class', 'event')
                         newDiv.style.position = 'absolute';
@@ -80,6 +110,7 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                         newDiv.style.width = width + 'px';
                         newDiv.style.cursor = 'pointer';
                         newDiv.setAttribute('data-event', data.title);
+                        newDiv.setAttribute('data-resource',data.resource)
                         let color = row.getAttribute("data-color")
                         newDiv.style.backgroundColor = color;
                         newDiv.style.borderRadius = '6px';
@@ -89,10 +120,11 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                         newDiv.innerHTML = `<div class='px-2  group relative py-[1px]'>
                         <div style="border:1px solid ${color};" class='dot-left dot | cursor-w-resize absolute top-1/2 hidden -translate-y-1/2 -left-1 w-2 h-2 rounded-full bg-white transition-all'></div>
                         <div style="border:1px solid ${color};" class='dot-right dot | cursor-e-resize absolute top-1/2 hidden -translate-y-1/2 -right-1 w-2 h-2 rounded-full bg-white transition-all'></div>
-        <p class='text-xs font-semibold'>${data.title}</p>
-            <p class='flex items-center text-[10px]'><span class='start | mr-1'>${format(data.start, 'h:mm a')}</span> <span class='end'> ${format(data.end, 'h:mm a')}</span> </p>
-    </div>`;
-                        // Add event listeners to show child divs on hover
+                        <p class='text-xs font-semibold'>${data.title}</p>
+                        <p class='flex items-center text-[10px]'><span class='start | mr-1'>${format(data.start, 'h:mm a')}</span> <span class='end'> ${format(data.end, 'h:mm a')}</span> </p>
+                        </div>`;
+
+                        // Add event listeners to show points for resize on hover
                         newDiv.addEventListener('mouseenter', () => {
                             newDiv.querySelectorAll('.dot').forEach(childDiv => {
                                 childDiv.style.display = 'block';
@@ -111,8 +143,11 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                         row.appendChild(newDiv);
                     } else {
                         if (el) {
+                            // if element is already in dom just update their time and color
                             const endElement = el?.querySelector('.end');
                             const startElement = el?.querySelector('.start');
+                            let newDiv = row.querySelector(`[data-event="${data.title}"]`)
+
                             if (row.contains(el)) {
                                 el.style.backgroundColor = row.getAttribute('data-color');
                             }
@@ -121,6 +156,7 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                         }
                     }
                 } else {
+                    // remove event;
                     const element = row.querySelectorAll('.event');
                     if (element.length > 0) {
                         for (let i = 0; i < element.length; i++) {
@@ -138,6 +174,7 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
 
     let currentResizer;
 
+    // function help to resize the event and update the time duration according to size and position of event
     function mousedown(e, title, data) {
         let el = document.querySelector(`[data-event="${title}"]`);
 
@@ -156,27 +193,38 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
             const rect = el.getBoundingClientRect();
             let parent = currentResizer.parentElement.parentElement;
 
+            // Simple logic is that one cube represent 80px so 1 hour represent 3.333px
+
+            // resize on left
             if (currentResizer.classList.contains("dot-left") && parent.getAttribute('data-event') === title) {
                 el.draggable = false;
+                // 160px is resource width that why we remove 160 
                 let left = rect.left - 160;
+
                 let newLeft = left - (prevX - e.clientX);
                 newLeft = newLeft < 0 ? 0 : newLeft;
+
                 el.style.width = rect.width + (prevX - e.clientX) + "px";
                 el.style.left = newLeft + "px";
+
                 let startTime = newLeft % 80;
                 let date = Math.floor(newLeft / 80) + 1;
 
                 let time = (startTime / 3.333).toFixed(2).toString().replace('.', ':');
                 let [hours, minutes] = time ? time.split(':') : ['00', '00'];
                 elData[0].start = startTime == 0 ? updateDateTime(elData[0].start, '00', '00',1) : updateDateTime(elData[0].start, hours, minutes,date)
-            } else if (currentResizer.classList.contains("dot-right") && parent.getAttribute('data-event') === title) {
+            }
+                // resize on right
+            else if (currentResizer.classList.contains("dot-right") && parent.getAttribute('data-event') === title) {
                 el.draggable = false;
                 let left = rect.left - 160;
+
                 let updatedWidth = rect.width - (prevX - e.clientX);
-                el.style.width =  updatedWidth + "px";
+                el.style.width = updatedWidth + "px";
+                
                 let endTime = (+rect.left + rect.width - (prevX - e.clientX)) % 80;
                 let date = Math.floor((updatedWidth + left) / 80) + 1;
-                console.log(date)
+
 
                 let time = (endTime / 3.333).toFixed(2).toString().replace('.', ':');
                 let [hours, minutes] = time ? time.split(':') : ['00', '00'];
@@ -184,15 +232,9 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
             }
             prevX = e.clientX;
             el.style.cursor = 'pointer'
-
-            if (currentResizer.classList.contains("dot")) {
-                console.log(elData)
-
-            }
         }
 
         function mouseup() {
-            console.log(elData)
             setEventsData((prev) => {
                 const newState = prev.map((event) => {
                     if (event.title == title && event.start !== elData[0].start && event.end !== elData[0].end ) {
@@ -205,7 +247,7 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                         return event;
                     }
                 })
-                console.log('Updating state with', newState);
+                // updating new events data in local storage
                 localStorage.setItem('guestaraEvents', JSON.stringify(newState));
                 return newState;
             })
@@ -215,95 +257,25 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
         }
     }
 
-    function updateDateTime(isoDateString, hours, minutes,newDate) {
-        console.log(isoDateString, hours, minutes)
-        let date = parseISO(isoDateString);
 
-        // Set the updated time
-        let updatedDate = setHours(date, hours);
-        updatedDate = setMinutes(updatedDate, minutes);
-        updatedDate = setDate(updatedDate,newDate)
 
-        // Format the updated date into ISO string
-        let updatedIsoDateString = formatISO(updatedDate);
-
-        return updatedIsoDateString;
-    }
 
     function dragStart(e) {
-        console.log(this)
         dragElement.current = this;
         parentElement.current = this.parentElement
         dragPoint.current = e.offsetX;
-        console.log(dragPoint)
     }
 
     function dragEnd() {
         console.log(this)
     }
 
-    function dragOver(e) {
-        e.preventDefault();
-        // console.log(e.offsetX)
-    }
 
-    function dragEnter(e) {
-        e.preventDefault();
-        // console.log(this)
-        // console.log(e.clientX)
-    }
-
-    function dragLeave() {
-    }
-
-    // function dragDrop(e, data) {
-    //     console.log("called dragDrop",e.target,dragElement.current,parentElement.current)
-    //     if (!parentElement.current || !dragElement.current) return;
-    //     parentElement.current.removeChild(dragElement.current);
-    //     let parent = e.target.parentElement
-
-    //     let title = dragElement.current.getAttribute('data-event');
-    //     console.log(title);
-    //     const elData = data.filter((el) => el.title === title);
-    //     let newLeft = e.clientX - 160 - dragPoint.current;
-    //     let width = dragElement.current.getBoundingClientRect().width;
-
-
-    //     let endTime = (newLeft +width) % 80;
-    //     let timeEnd = (endTime / 3.333).toFixed(2).toString().replace('.', ':');
-    //     let [hours, minutes] = timeEnd ? timeEnd.split(':') : ['00', '00'];
-    //     elData[0].end = endTime == 0 ? updateDateTime(elData[0].end, '00', '00') : updateDateTime(elData[0].end, hours, minutes)
-
-    //     let startTime = newLeft % 80;
-    //     let time = (startTime / 3.333).toFixed(2).toString().replace('.', ':');
-    //     let [hour, minute] = time ? time.split(':') : ['00', '00'];
-    //     elData[0].start = startTime == 0 ? updateDateTime(elData[0].start, '00', '00') : updateDateTime(elData[0].start, hour, minute)
-
-
-    //     dragElement.current.style.left = newLeft + 'px'
-    //     parent.appendChild(dragElement.current);
-
-    //     setEventsData((prev) => {
-    //         return prev.map((event) => {
-    //             if (event.title == title) {
-    //                 return {
-    //                     title: elData[0].title,
-    //                     resource: elData[0].resource,
-    //                     end: elData[0].end,
-    //                     start: elData[0].start
-    //                 };
-    //             } else {
-    //                 return event;
-    //             }
-    //         })
-    //     })
-    //     // console.log(elData[0])
-    //     // console.log(e.clientX, e.offsetX )
-    //     // console.log(dragPoint, e.clientX, parent, dragElement.current, parentElement.current)
-    //     parentElement.current = null;
-    //     dragElement.current = null;
-    //     dragPoint.current = null;
-    // }
+ /**
+ * Handles the end of a drag operation.
+ * @param {DropResult} result - The result of the drag operation.
+ * @returns {void}
+ */
     function dragDrop(e, data) {
         console.log("called dragDrop", e.target, dragElement.current, parentElement.current);
         if (parentElement.current == null || dragElement.current == null) return;
@@ -363,7 +335,7 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                         return event;
                     }
                 });
-                console.log("data updated")
+
                 localStorage.setItem('guestaraEvents', JSON.stringify(updatedEvents));
                 return updatedEvents;
             });
@@ -372,7 +344,6 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
             console.error("Failed to execute drag and drop:", error);
         }
     }
-
    
     const handleDrop = (e, eventsData) => {
         dragDrop(e, eventsData);
@@ -383,26 +354,21 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
 
         const rowContainer = document.querySelectorAll('.row-cont');
         rowContainer.forEach(row => {
-            row.addEventListener('dragover', dragOver);
-            row.addEventListener('dragenter', dragEnter);
-            row.addEventListener('dragleave', dragLeave);
             row.addEventListener('drop', (e) => handleDrop(e, eventsData));
         });
         return () => {
             rowContainer.forEach(row => {
-                row.removeEventListener('dragover', dragOver);
-                row.removeEventListener('dragenter', dragEnter);
-                row.removeEventListener('dragleave', dragLeave);
                 row.removeEventListener('drop', (e) => handleDrop(e, eventsData)); // Modify this to correctly remove the specific handler
             });
         };
     }, [currentMonth, eventsData])
 
     
+
+    // Add new resources
     const handleAddResource = () => {
-        let updateResources = [...resources];
         newResource.id = resources.length;
-        updateResources.push(newResource)
+        let updateResources = [...resources,newResource];
         setResources(updateResources);
         localStorage.setItem('guestaraResource', JSON.stringify(updateResources));
         setNewResource({
@@ -413,13 +379,27 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
         onClose()
     }
 
+    // Add new event
+    const handleAddEvent = () => {
+        let updatedEvents = [...eventsData, newEvent];
+        setEventsData([...updatedEvents])
+        localStorage.setItem('guestaraEvents', JSON.stringify(updatedEvents));
+        setNewEvent({
+            start: '',
+            end: '',
+            title: '',
+            resource: 1,
+        })
+        addEvent.onClose()
+    }
+
     return (
         <>
             <div className="grid-cont w-full h-[calc(100vh-4rem)] relative overflow-scroll">
 
                 <div className="top-left-dummy-box | fixed z-40 w-40 h-8 border flex justify-between px-1 items-center border-gray-400 bg-white">
                     <button onClick={onOpen} className='text-xs flex items-center bg-[#007AFE] text-white rounded-md  p-1 '><Plus size={15}/> Resource</button>
-                    <button onClick={onOpen} className='text-xs flex items-center bg-[#007AFE] text-white rounded-md  p-1 '><Plus size={15}/> Event</button>
+                    <button onClick={addEvent.onOpen} className='text-xs flex items-center bg-[#007AFE] text-white rounded-md  p-1 '><Plus size={15}/> Event</button>
                 </div>
 
                 <div style={{ position: "-webkit-sticky" }} className="resource-cont | z-30 w-40 bg-white sticky mt-8 top-8 left-0">
@@ -444,7 +424,7 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                         })}
                     </div>
 
-                    {/* Cells */}
+                    {/* row */}
                     {resources.length > 0 && resources.map((resource, i) => {
                         return (
                             <div
@@ -454,6 +434,7 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                                 data-color={resource.color}
                                 data-resource={resource.id}
                                 className='row-cont | flex relative w-full h-16 border-t border-gray-400'>
+                                {/* cells */}
                                 {days.map((day, j) => {
                                     return (
                                         <div
@@ -467,48 +448,8 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                     })}
                 </div>
 
-                <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-                    <ModalContent>
-                        {(onClose) => (
-                            <>
-                                <ModalHeader className="flex flex-col gap-1">Add Resource</ModalHeader>
-                                <ModalBody>
-                                    <h2>Name </h2>
-                                    <Input value={newResource.name} onChange={(e) => {
-                                        setNewResource((prevState) => ({
-                                            ...prevState,
-                                            name: e.target.value,
-                                        }));
-                                    }} />
-                                    <h2>Choose Color</h2>
-                                    <div
-                                        className={cn( "w-7 h-7 rounded-md border relative border-gray-400 p-0 multicolor")}
-                                    >
-                                        <input
-                                            type="color"
-                                            value={newResource.color}
-                                            onChange={(e) => {
-                                                setNewResource((prevState) => ({
-                                                    ...prevState,
-                                                    color: e.target.value,
-                                                }));
-                                            }}
-                                            className="opacity-0 absolute left-0 top-0 w-full cursor-pointer"
-                                        />
-                                    </div>
-                                </ModalBody>
-                                <ModalFooter>
-                                    <Button color="danger" variant="light" onPress={onClose}>
-                                        Close
-                                    </Button>
-                                    <Button color="primary" onPress={handleAddResource}>
-                                        Add
-                                    </Button>
-                                </ModalFooter>
-                            </>
-                        )}
-                    </ModalContent>
-                </Modal>
+                <AddEvent isOpen={addEvent.isOpen} handleAddEvent={handleAddEvent}  onClose={addEvent.onClose} newEvent={newEvent} setNewEvent={setNewEvent} resources={resources} />
+                <AddResource isOpen={isOpen} handleAddResource={handleAddResource}  onClose={onClose} newResource={newResource} setNewResource={setNewResource} />
             </div>
         </>
     )
