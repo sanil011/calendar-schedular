@@ -49,8 +49,8 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
 
         let resource = div.getAttribute('data-resource');
         // find the row of resource
-        let row = document.querySelector(`[data-resource="${resource}"]`);
-
+        let row = document.querySelector(`[data-resource="${resource}"].row-cont`);
+         console.log(row,div)
 
         let update = [...eventsData]
         let rm = update.filter(event => event.title !== title);
@@ -63,7 +63,9 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
         });
 
         // remove event from a row
-        row.removeChild(div);
+        if (row.contains(div)) {
+            row.removeChild(div);
+        }
         alert(`${title} is deleted`);
     }
 
@@ -146,10 +148,10 @@ function CalendarView({ firstDayCurrentMonth, currentMonth, resources, setResour
                             // if element is already in dom just update their time and color
                             const endElement = el?.querySelector('.end');
                             const startElement = el?.querySelector('.start');
-                            let newDiv = row.querySelector(`[data-event="${data.title}"]`)
 
                             if (row.contains(el)) {
                                 el.style.backgroundColor = row.getAttribute('data-color');
+                                el.setAttribute('data-resource', row.getAttribute('data-resource'))
                             }
                             endElement.innerHTML = format(data.end, 'h:mm a');
                             startElement.innerHTML = format(data.start, 'h:mm a');
